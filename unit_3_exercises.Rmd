@@ -122,7 +122,9 @@ ex_1_data = penguins %>%
          !is.na(flipper_length_mm),
          !is.na(sex)) %>%   # students may forget to do this
   dplyr::select(sex, flipper_length_mm) %>%
-  droplevels() # This removes the "Chinstrap" level from the species factor
+  droplevels() # removes empty levels from factors
+
+summary(ex_1_data)
 
 # Calculate summary stats
 ex_1_data %>%

@@ -18,6 +18,7 @@ library(gvlma)  # gvlma()
 library(GGally)
 library(car)
 library(MASS)
+library(rstatix) # identify_outliers()
 ```
 
 ```{r}
@@ -205,6 +206,22 @@ ggplot(gentoo_males, aes(row_num, leverage)) +
   xlab('Row number') + ylim(0,1) 
 gentoo_males[17,]
 ```
+
+You can also use the function identify_outliers(), which uses boxplot methods to return a data frame of outliers (see `?identify_outliers` for more info)
+
+```{r}
+# Test for the presence of outliers in the bill length and bill depth data
+gentoo_males %>%
+  identify_outliers(bill_depth_mm)
+
+gentoo_males %>%
+  identify_outliers(bill_length_mm) # 5 outliers found
+
+# Note: here is a result from a made-up dataset where I added an outlier
+# data.frame(dat=c(rnorm(100), 312)) %>% identify_outliers()  
+```
+
+The identify_outliers() test returned nothing for the bill length data set, but returned 5 outliers for the bill depth data set. One of the bill depth outliers was classified as "extreme", but a glance at the data looks like that was just a big penguin. The data doesn't appear to be improperly coded or anything, so we can leave it in. 
 
 ### Quickly check many assumptions at once
 

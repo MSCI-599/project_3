@@ -64,13 +64,13 @@ You complete your graph by adding one or more layers to `ggplot()` with the addi
 
 Each geom function in `ggplot2` takes a mapping argument. The visual properties in the plot are mapped onto your dataset using the aesthetics mapping function `aes()` inside of the geom function. That's a fancy way of saying you use aes() to choose which variable in the data you want to be plotted along the x axis, and which you want to be plotted along the y axis. 
 
-Let's use `ggplot2` to visualize the relationship between penguin body mass and penguin flipper length. By the way, I forget the names of my variables almost instantly after I look at the data. Maybe my brain is broken or something. So before I do anything, I always take a peek at my data to remind myself of the variable names and types. I usually use head() or summary(), but glimpse() is another function for peeking at your data that comes in the tidyverse:
+Let's use `ggplot2` to visualize the relationship between penguin body mass and penguin flipper length. But before we do anything, let's take a peek at the data to remind ourselves of the variable names and types. I usually use head() or summary(), but glimpse() is another function for peeking at your data that comes in the tidyverse:
 
 ```{r}
 glimpse(penguins)
 ```
 
-Now that I remember my variable names, let's build our scatterplot:
+Now that I remember my variable names, let's build a scatterplot:
 
 ```{r, warning=TRUE}
 ggplot(data=penguins) + 
@@ -227,7 +227,7 @@ ggplot(penguins) +
   geom_bar(aes(x = island, fill = species)) +
   facet_wrap(~species, ncol = 1) +
   coord_flip() +
-  ggsave(filename = "figures/penguin_species_per_island.png", device = "png", width = 5, height = 4, units = "in", dpi = 300)
+  ggsave(filename = "figures/penguin_species_per_island.png", device = "png", width = 5, height = 4col, units = "in", dpi = 300)
 ```
 
 For this figure, I decided to save it as a `.png`, and I provided a width and height for the figure in units of inches. I also specified that I wanted the output to have a high resolution of 300 dots per inch. I didn't need to include that since `dpi=300` is the default, but now you see how to change it. Note, I also didn't need to specify "png" for the device because ggplot would have been smart enough to notice that my filename endds in ".png". I was just being very explicit here.

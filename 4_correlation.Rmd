@@ -53,10 +53,10 @@ Alright, those Q-Q plots look fine, so we can move onto a correlation analysis g
 
 ```{r}
 # cor() returns just the correlation coefficient r
-cor(x=gentoo$bill_length_mm, y=gentoo$bill_depth_mm, use="complete.obs")
+cor(x=gentoo$bill_length_mm, y=gentoo$bill_depth_mm, use="complete.obs") # use param handles NAs
 
 # cor.test() returns the t-statistic, df, p-value, etc.
-cor.test(x=gentoo$bill_length_mm, y=gentoo$bill_depth_mm, use="complete.obs")
+cor.test(x=gentoo$bill_length_mm, y=gentoo$bill_depth_mm, use="complete.obs") # use param handles NAs
 ```
 Interpreting Pearson's r:
 
