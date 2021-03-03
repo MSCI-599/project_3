@@ -180,9 +180,10 @@ summary(lm_flip)
 ggplot(data=gentoo, aes(x = flipper_length_mm, y = bill_depth_mm)) +
      geom_point() +
      geom_smooth(method = "lm")
+AIC(lm_flip, lm_bill_length)
 ```
 
-The Adjusted $R^2$ is higher in the flipper model than in the bill length model, so flipper length does a better job of predicting bill depth for Gentoo penguins.
+The Adjusted $R^2$ is higher in the flipper model than in the bill length model, so flipper length does a better job of predicting bill depth for Gentoo penguins. You can also compare the Akaike Information Criteria of the two models with `AIC()`, and the model with the smaller AIC is a better fit. Differences of >2 AIC units are considered statistically significant.
 
 ***
 
