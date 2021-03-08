@@ -53,7 +53,7 @@ library(palmerpenguins)
 library(GGally) # ggPairs()
 library(ggiraph)
 library(ggiraphExtra) # ggPredict()
-# library(broom)  # tidy() augment() #loads with tidyverse
+library(broom)  # tidy() augment() #does NOT load with tidyverse
 library(car) # vif()
 
 # Exploratory data analysis:
@@ -144,7 +144,7 @@ So that makes it very clear that running all three species together was a seriou
 
 ### Exercise 5.1
 
-Build a linear model predicting Gentoo bill length as a function of flipper length. Plot the predictions. Which explanatory variable (bill length vs. flipper length) does a better job of predicting bill depth? What is your evidence?
+Build a linear model predicting Gentoo bill depth as a function of flipper length. Plot the predictions. Which explanatory variable (bill length vs. flipper length) does a better job of predicting bill depth? What is your evidence?
 
 ***
 
@@ -170,7 +170,7 @@ However, if you are modeling for prediction, and don't actually care what the re
 #### Continuous vs. categorical variables:
 
 -  Continuous variable: numeric variables that can have an infinite number of values between any two values. Example: `bill_depth_mm`, `bill_length_mm`
--  Categorical varialbe: (a.k.a. discrete or nominal variables) contain a finite number of categories or distinct groups. Example: `species`. These should typically be in the `factor` class in R.
+-  Categorical variable: (a.k.a. discrete or nominal variables) contain a finite number of categories or distinct groups. Example: `species`. These should typically be in the `factor` class in R.
 
 There are cases when you, the data scientist, can make a conscientious choice between assigning a variable as continuous vs. categorical. A good example is "year". If you are looking for a trend in your data over time, year should be treated as a continuous variable. If you are trying to account for some wacky conditions that can change from year to year, but that probably don't consitute a temporal trend, you could treat year as a categorical variable.
 
@@ -200,7 +200,7 @@ coef(lm_3)[1] # subset the y-intercept
 
 anova(lm_3) # Analysis of variance tables (typically used when all predictors are categorical)
 
-broom::tidy(lm_3)
+broom::tidy(lm_3)  # ?tidy.lm
 broom::tidy(lm_3, conf.int = TRUE, conf.level = 0.95) # Added confidence intervals to output
 broom::tidy(lm_3, conf.int = TRUE, conf.level = 0.95) %>%
   mutate_if(is.numeric, round, 2) # round to 2 decimals
@@ -243,13 +243,13 @@ Let’s make model prediction lines using the entire range of bill length instea
 # Build a new bill_length_mm dataset that spans the full range of the original data at even intervals
 newdata_bill_length_mm = seq(min(penguins_lm_3$bill_length_mm), max(penguins_lm_3$bill_length_mm), by = .1)
 # Repeat complete bill_length_mm data for each species
-newdata = expand.grid(bill_length_mm = newdata_bill_length_mm, species = unique(penguins_lm_3$species) )
+newdata = expand.grid(bill_length_mm = newdata_bill_length_mm, species = unique(penguins_lm_3$species) ) # data.frame names must exactly match lm variables
 head(newdata)
 ```
 
 The key to making a dataset for prediction is that it must have every variable used in the model in it. You will get an error if you forget a variable or make a typo in one of the variable names. Note that the prediction dataset does not need to contain the response variable.
 
-We use this prediction dataset with the `newdata` argument in `predict()`. We can add the predicted values to the prediction dataset using `cbind()`. When we make the plot of the fitted lines now we can see that the line for each species covers the same range. There are now two datasets used in the plotting code: the original for the points and newdata for the predicted line and 95% confidence intervals"
+We use this prediction dataset with the `newdata` argument in `predict()`. We can add the predicted values to the prediction dataset using `cbind()`. When we make the plot of the fitted lines now we can see that the line for each species covers the same range. There are now two datasets used in the plotting code: the original `penguins_lm_3_predict` for the data points and `newdata_predict_lm_3` for the predicted line and 95% confidence intervals.
 
 ```{r}
 newdata_predict_lm_3 = cbind(newdata, predict(lm_3, interval="confidence", newdata = newdata))
@@ -266,7 +266,7 @@ Another way to generate model predictions is using the `augment()` function in t
 ```{r}
 # Get model predictions
 lm_3_predict = lm_3 %>%
-  augment(penguins_lm_3, se_fit=TRUE) %>%
+  broom::augment(penguins_lm_3, se_fit=TRUE) %>% # augment() instead of predict()
   mutate(lwr = .fitted - 1.96 * .se.fit, upr = .fitted + 1.96 * .se.fit) # Calculate 95% C.I. using SE
 # Plot the data and the model predictions
 ggplot(aes(x = bill_length_mm, y = bill_depth_mm, color = species), data=lm_3_predict) +
@@ -279,10 +279,12 @@ Similarly, we can use `augment()` to generate predictions with new data, so that
 
 ```{r}
 # Get model predictions with newdata
-newdata = penguins_lm_3 %>% tidyr::expand(bill_length_mm, species)
+newdata = penguins_lm_3 %>% 
+  tidyr::expand(bill_length_mm, species) # instead of expand.grid(), type ?tidyr::expand in R console
 lm_3_predict = lm_3 %>%
   broom::augment(newdat = newdata, se_fit=TRUE) %>%
-  mutate(lwr = .fitted - 1.96 * .se.fit, upr = .fitted + 1.96 * .se.fit) # Calculate 95% C.I. using SE
+  mutate(lwr = .fitted - 1.96 * .se.fit, 
+         upr = .fitted + 1.96 * .se.fit) # Calculate 95% C.I. using SE
 # Plot the data and the model predictions
 ggplot() +
   geom_point(aes(x = bill_length_mm, y = bill_depth_mm, color = species), data=penguins_lm_3) +
@@ -306,6 +308,21 @@ ggplot() +
 
 ***
 
+### Exercise 5.2
+
+Build a multiple linear regression model where penguin `bill_depth_mm` is a function of `flipper_length_mm` + `species`. Use `ggPredict()` to plot the data and the model predictions. 
+
+```{r}
+lm_flip = lm(bill_depth_mm ~ flipper_length_mm + species, data=penguins)
+summary(lm_flip) # Adj-R^2 = 0.7537
+ggPredict(lm_flip, se=TRUE, interactive=TRUE)
+
+summary(lm_3) # Adj-R^2 = 0.7669 
+# flipper_length + species is a better fit than bill_length + species
+```
+
+***
+
 #### Adding an interaction term
 
 Recall our model `lm_3`:
@@ -318,11 +335,12 @@ We allow bill depth to depend on both the continuous variable bill length and th
 
 ```{r}
 lm_4 = lm(bill_depth_mm ~ bill_length_mm*species, data=penguins_lm_3)
+# lm_4 = lm(bill_depth_mm ~ bill_length_mm + species + bill_length_mm * species, data=penguins_lm_3) # Equivalent model formula
 ```
 
-Note that `bill_length_mm*species` is short-hand for `bill_length_mm + species + bill_length_mm X species`. Interaction terms are coded this way because when you build a model with an interaction, it is important to always include the interacting variables on their own as well. You wouldn't want a model that looked like `bill_depth_mm ~ bill_length_mm X species` without including bill length and species as additional terms because then the interaction coefficients would be tasked with accounting for all of the variation from each of those two independent variables in addition to the interaction between those variables. This would make interpretation difficult and may bias our understanding of the importance of the interaction.
+Note that `bill_length_mm*species` is short-hand for `bill_length_mm + species + bill_length_mm * species`. Interaction terms are coded this way because when you build a model with an interaction, it is important to always include the interacting variables on their own as well. You wouldn't want a model that looked like `bill_depth_mm ~ bill_length_mm X species` without including bill length and species as additional terms because then the interaction coefficients would be tasked with accounting for all of the variation from each of those two independent variables in addition to the interaction between those variables. This would make interpretation difficult and may bias our understanding of the importance of the interaction. If you want to model the interaction of two independent variables, but suppress the inclusion of those variables on their own, you can use a `:` in the model formula instead (i.e. `bill_depth_mm ~ bill_length_mm:species`). Please think critically and exercise caution if you choose to build this type of model.
 
-If we look at the model results for `lm_3` side by side with `lm_4`, we can see that the inclusion of the interaction term is not helping our model very much. The $R^2$ measure barely improves with `lm_4`, and the $Adjusted-R^2$ measure is actually lower. None of the interaction coefficients in `lm_4` are statistically significant. 
+If we look at the model results for `lm_3` side by side with `lm_4`, we can see that the inclusion of the interaction term is not helping our model very much. The $R^2$ measure barely improves with `lm_4`, and the $Adjusted-R^2$ measure is actually lower. This is because the $Adjusted-R^2$ measure is calculated from the $R^2$ measure, but it includes a penalty for model complexity (i.e. for each additional model coefficient). None of the interaction coefficients in `lm_4` are statistically significant. 
 
 ```{r}
 summary(lm_3)
@@ -334,7 +352,7 @@ If we use the AIC() function to compare the Akaike Information Criterion between
 ```{r}
 AIC(lm_3, lm_4)
 best_model = step(lm_4)
-best_model
+summary(best_model)
 ```
 
 If we plotted the `lm_4` predictions for each of the 3 species, the lines will probably look pretty close to parallel, since the interaction terms were not significant. We can build our predictions with the same methods we used for `lm_3`. 
@@ -344,7 +362,8 @@ If we plotted the `lm_4` predictions for each of the 3 species, the lines will p
 # ggPredict(lm_4, se=TRUE, interactive=TRUE)  # easy, but less customizable
 
 # Get model predictions with newdata
-newdata = penguins_lm_3 %>% expand(bill_length_mm, species)
+newdata = penguins_lm_3 %>% 
+  expand(bill_length_mm, species)
 head(newdata)
 lm_4_predict = lm_4 %>%
   augment(newdat = newdata, se_fit=TRUE) %>%
@@ -356,15 +375,15 @@ ggplot() +
   geom_line(data=lm_4_predict, aes(y = .fitted, x = bill_length_mm, color=species), size = 1)
 ```
 
-As we expected, the distinct slopes of bill depth vs. bill length for each of the 3 species are almost parallel. Since the AIC values are lower (i.e. better fit) for lm_3, we would select that as our final model instead of lm_4. 
+As we expected, the distinct slopes of bill depth vs. bill length for each of the 3 species are almost parallel. Since the AIC values are lower (i.e. better fit) for lm_3, we would select that as our final model instead of lm_4. If you look carefully at the lm_4 coefficient table (or if you hover over the species-specific model lines in the interactive ggiraph model prediction plot), you'll notice that for a given species, the model coefficients are exactly equal to the coefficients of a linear model for `bill_depth_mm ~ bill_length_mm` using just the data for a single species. For example, if you hover over the blue Gentoo model prediction line, you'll see the model formula is `y = 0.2*x + 5.25`. Recall that the model lm_2 that we built with the `gentoo` data had the same formula: `y = 0.2*x + 5.25`.
 
 ***
 
 ### Multiple regression with 2 continuous variables
 
-When including multiple independent variables in a regression, especially multiple continuous variables, you need to check the collinearity of your predictors. If 2 predictors `x1` and `x2` are extremely collinear, then you can bias your interpretation of the model because you can't objectively determine how much variation in `y` is caused by `x1` vs. `x2`. To deal with this, you should calculate the Variance Inflation Factor of your independent variables. If the VIF = 1, then your independent variables are not correlated. There are different thresholds set for VIF, but generally, if the VIF > 4 or 5, you have a moderate problem with multicollinearity and if the VIF > 10, you have a big problem with multicollinearity in your model. This statistic should be reported and model results should be interpreted with the VIF in mind. If you are more interested in a mechanistic model (i.e. figuring out WHAT drives `y`) rather than a predictive model (i.e. getting the BEST estimate of `y`) then you should use your best human judgement to remove predictor variables until the model results are more interpretable. 
+When including multiple independent variables in a regression, especially multiple continuous variables, you need to check the collinearity of your predictors. If 2 predictors `x1` and `x2` are extremely collinear, then you can bias your interpretation of the model because you can't objectively determine how much variation in `y` is caused by `x1` vs. `x2`. To deal with this, you should calculate the Variance Inflation Factor of your independent variables. If the VIF = 1, then your independent variables are not correlated. There are different thresholds set for VIF, but generally, if the VIF > 4 or 5, you have a moderate problem with multicollinearity and if the VIF > 10, you have a big problem with multicollinearity in your model. This statistic should be reported and model results should be interpreted with the VIF in mind. If you are more interested in a mechanistic model (i.e. figuring out WHAT drives `y`) rather than a predictive model (i.e. getting the BEST estimate of `y`) then you may need to use your best human judgement to remove predictor variables until the model results are more interpretable. 
 
-Let's try out a regression with 2 continuous variables. We'll look at Gentoo penguin bill depth as a function of bill length, flipper length and body mass. We'll use AIC() and step() to compare this complex model with the simpler models. We'll also use vif() to check if we have a problem with multicollinearity.
+Let's try out a regression with 2 continuous variables. We'll look at Gentoo penguin bill depth as a function of bill length, flipper length and body mass. We'll use `AIC()` and `step()` to compare this complex model with the simpler models. We'll also use `car::vif()` to check if we have a problem with multicollinearity.
 
 ```{r}
 library(car)  # vif()
@@ -384,12 +403,14 @@ lm_gentoo_2 = lm(bill_depth_mm ~ bill_length_mm + flipper_length_mm, data=gentoo
 lm_gentoo_3 = lm(bill_depth_mm ~ bill_length_mm + flipper_length_mm + body_mass_g, data=gentoo)
 
 vif(lm_gentoo_3) # vif values ~ 2, mild multicollinearity
-step(lm_gentoo_3) # Doesn't remove any variables
+best_model = step(lm_gentoo_3) # Doesn't remove any variables
+summary(best_model)
 AIC(lm_gentoo_1, lm_gentoo_2, lm_gentoo_3) # lm_gentoo_3 performs best
 ```
 
-Plot predictions: ######### CHECK THIS AREA
-Now let's plot the model predictions. This is where things get a bit tricky, because we are interested in changes along four dimensions (bill depth, bill lenth, flipper length and body mass) but we can only easily visualize 2 dimensions in our plots. The simplest solution here is to plot changes in our y variable agains changes in our x variables one at a time, while holding the other x variables constant. A good way to do this is to set 2 of your x variables to their median value in the observations, and then look at how y changes with the remaining x variable. We can do this by generating a new data set, and then using the `augment()` function in the tidyverse (or `predict()` in base R) and plotting just like we did earlier:
+The Variance Inflation Factors were all around 2, indicating that we don't have any serious multicollinearity. When we tested our complex model with 3 continuous variables in the `step()` function, the full model was retained. Comparisons between the AIC values for each of the 3 increasingly complex models also indicates that the most complex model has the lowest AIC by a significant margin (i.e. >2 AIC units). That means we should keep the complex model `lm_gentoo_3`. 
+
+Now let's plot the model predictions. This is where things get a bit tricky, because we are interested in changes along four dimensions (bill depth, bill length, flipper length and body mass) but we can only easily visualize 2 dimensions in our plots. The simplest solution here is to plot changes in our y variable against changes in our x variables one at a time, while holding the other x variables constant. A good way to do this is to set 2 of your x variables to their median value in the observations, and then look at how y changes with the remaining x variable. We can do this by generating a new data set, and then using the `augment()` function in the tidyverse (or `predict()` in base R) and plotting just like we did earlier:
 
 ```{r}
 ### Look at bill depth ~ body mass while holding bill length and flipper length constant
@@ -401,7 +422,7 @@ newdata = gentoo %>%
          flipper_length_mm = median(gentoo$flipper_length_mm, na.rm=TRUE))
 
 lm_gentoo_3_predict = lm_gentoo_3 %>%
-  augment(newdat = newdata, se_fit=TRUE) %>%
+  augment(newdata = newdata, se_fit=TRUE) %>% # ?augment.lm
   mutate(lwr = .fitted - 1.96 * .se.fit, upr = .fitted + 1.96 * .se.fit) # Calculate 95% C.I. using SE
 
 # Plot the data and the model predictions
@@ -415,7 +436,7 @@ ggplot() +
 
 ***
 
-### Exercise 5.2
+### Exercise 5.3
 
 Plot the model predictions from our model `lm_gentoo_3` so that we can see the variation in bill depth vs. flipper length while holding bill length and body mass constant at their medians.
 
@@ -446,20 +467,23 @@ penguins %>%
   summarize(mean_body_mass_g = mean(body_mass_g))
 
 # which species has higher body mass?
+# Note: penguins with body_mass_g=NA or sex=NA can't be included in ANOVA model
 penguins %>%
+  filter(!is.na(sex),
+         !is.na(body_mass_g)) %>% 
   group_by(species) %>%
   summarize(mean_body_mass_g = mean(body_mass_g, na.rm=TRUE))
 
 TukeyHSD(penguin_anova)  # Requires the output of the aov() function
 ```
 
-So the post-hoc Tukey test tells us that Chinstrap and Adelie penguin body mass is not significantly different (p>0.05), however, both Chinstrap and Adelie penguins body mass are each significantly different from Gentoo penguins (p<0.05). We know from simply calculating the means for those species separately that, in fact, Adelie and Chinstrap body mass is *significantly less than* Gentoo body mass. Tada!
+So the post-hoc Tukey test tells us that Chinstrap and Adelie penguin body mass is not significantly different (p>0.05), however, both Chinstrap and Adelie penguins body mass are each significantly different from Gentoo penguins (p<0.05). The `diff` column in the `TukeyHSD()` output shows the difference between the mean body mass for the first species minus the second species. We can also simply calculate the body masses for each species separately to find and compare the mean body mass. 
 
 ANOVA is pretty robust to not-quite-normal data, but if you have a big normality problem you can switch to the Kruskall Wallace test `kruskal.test()`.
 
 ***
 
-### Exercise 5.3
+### Exercise 5.4
 
 Conduct an Analysis of Variance to determine whether Adelie body mass is significantly different between the three islands where observations were collected. Conduct a post-hoc Tukey test if appropriate.
 
@@ -473,5 +497,8 @@ https://www.statmethods.net/stats/regression.html
 Diagnostic tests for linear regression:
 https://www.statmethods.net/stats/rdiagnostics.html
 https://www.ianruginski.com/post/regressionassumptions/
+
+ggpredict() vignettes:
+https://cran.r-project.org/web/packages/ggiraphExtra/vignettes/ggPredict.html
 
 

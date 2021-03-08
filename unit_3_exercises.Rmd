@@ -166,7 +166,7 @@ cor.test(x=penguins$bill_length_mm, y=penguins$bill_depth_mm, use="complete.obs"
 
 ### Exercise 5.1
 
-Build a model predicting Gentoo bill length as a function of flipper length. Plot the predictions. Which explanatory variable (bill length vs. flipper length) does a better job of predicting bill depth? What is your evidence?
+Build a model predicting Gentoo bill depth as a function of flipper length. Plot the predictions. Which explanatory variable (bill length vs. flipper length) does a better job of predicting bill depth? What is your evidence?
 
 ```{r}
 gentoo = penguins %>% filter(species=="Gentoo")
@@ -188,6 +188,21 @@ The Adjusted $R^2$ is higher in the flipper model than in the bill length model,
 ***
 
 ### Exercise 5.2
+
+Build a multiple linear regression model where penguin `bill_depth_mm` is a function of `flipper_length_mm` + `species`. Use `ggPredict()` to plot the data and the model predictions. 
+
+```{r}
+lm_flip = lm(bill_depth_mm ~ flipper_length_mm + species, data=penguins)
+summary(lm_flip) # Adj-R^2 = 0.7537
+ggPredict(lm_flip, se=TRUE, interactive=TRUE)
+
+summary(lm_3) # Adj-R^2 = 0.7669 
+# flipper_length_mm + species is a better fit than bill_length_mm + species
+```
+
+***
+
+### Exercise 5.3
 
 Plot the model predictions from our model `lm_gentoo_3` so that we can see the variation in bill depth vs. flipper length while holding bill length and body mass constant at their medians.
 
@@ -214,7 +229,7 @@ ggplot() +
 
 ***
 
-### Exercise 5.3
+### Exercise 5.4
 
 Conduct an Analysis of Variance to determine whether Adelie body mass is significantly different between the three islands where observations were collected. Conduct a post-hoc Tukey test if appropriate.
 
